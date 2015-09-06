@@ -75,13 +75,13 @@ function _getAudioCodec()
 				if [[ ! -z $gCodecRev ]]; then
 					case $gCodecRev in
 						0x100002) gCodec="Realtek ALC3234";; # ALC255 variant found on some Broadwell Dell Inspiron laptops
-						*) _printError "Unsupported revision of Realtek ALC255 ($gCodecRev).";;
+						*) _printError "Unsupported revision of Realtek ALC255 ($gCodecRev)!";;
 					esac
 				fi;;
-			*) _printError "Unsupported audio codec ($gCodecIDHex / $gCodecIDDec).";;
+			*) _printError "Unsupported audio codec ($gCodecIDHex / $gCodecIDDec)!";;
 		esac
 	else
-		_printError "No audio codec found in IORegistry."
+		_printError "No audio codec found in IORegistry!"
 	fi
 
 	# Initialize more variables
@@ -110,7 +110,7 @@ function _downloadCodecFiles()
 
 	# Check that the command executed successfully
 	if [ $? -ne 0 ]; then
-		_printError "Failed to download $gCodec files."
+		_printError "Failed to download $gCodec files!"
 	fi
 }
 
