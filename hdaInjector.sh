@@ -104,9 +104,9 @@ function _downloadCodecFiles()
 	# Download the ZIP containing the codec XML/plist files
 	printf "${STYLE_BOLD}Downloading $gCodec XML/plist files:${STYLE_RESET}\n"
 	curl --output "/tmp/$fileName" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/laptop/Codecs/$fileName?raw=true
-	# Download the plist containing the kext patches
-	printf "${STYLE_BOLD}Downloading $gCodec kext patches:${STYLE_RESET}\n"
-	curl --output "/tmp/ktp.plist" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/laptop/Patches/$gCodecShort.plist?raw=true
+	# Download the plist containing the kext patches; laptops will have their audio patches included in their repos
+	# printf "${STYLE_BOLD}Downloading $gCodec kext patches:${STYLE_RESET}\n"
+	# curl --output "/tmp/ktp.plist" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/laptop/Patches/$gCodecShort.plist?raw=true
 	printf "${STYLE_BOLD}Creating $gCodec injector kext ($gInjectorKextPath):${STYLE_RESET}\n"
 	# Extract the codec XML/plist files
 	unzip "/tmp/$fileName" -d /tmp
@@ -179,7 +179,7 @@ function main()
 {
 	echo "OS X hdaInjector.sh script v$gScriptVersion by theracermaster"
 	echo "Heavily based off Piker-Alpha's AppleHDA8Series script"
-	echo "HDA Config files & XML files by toleda, Mirone & others"
+	echo "HDA Config files, XML files & kext patches by toleda, Mirone, lisai9093 & others"
 	echo "--------------------------------------------------------------------------------"
 
 	_getAudioCodec
