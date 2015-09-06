@@ -89,9 +89,6 @@ function _getAudioCodec()
 	gCodecModel=$(echo $gCodecShort | tr -d '[:alpha:]')
 	gInjectorKextPath="AppleHDA$gCodecModel.kext"
 
-	# Print information about the codec
-	# echo "$gCodec ($gCodecHex / $gCodecDec) detected. Downloading codec files..."
-
 	printf "Detected audio codec: ${STYLE_BOLD}${COLOR_CYAN}$gCodec ${STYLE_RESET}($gCodecIDHex / $gCodecIDDec / $gCodecRev)\n"
 	echo "--------------------------------------------------------------------------------"
 }
