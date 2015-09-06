@@ -1,10 +1,10 @@
 #!/bin/bash
-# hdaInjector.sh - Script to create an AppleHDA injector for desktop audio codecs common on several Gigabyte boards
+# hdaInjector.sh - Script to create an AppleHDA injector for audio codecs common on several laptops
 
 # Initialize global variables
 
 ## The script version
-gScriptVersion="0.1"
+gScriptVersion="0.2-laptop"
 
 ## The user ID
 gID=$(id -u)
@@ -12,9 +12,11 @@ gID=$(id -u)
 ## The audio codec
 gCodec="Unknown"
 ## The audio codec's hex identifier
-gCodecHex="0x00000000"
+gCodecIDHex="0x00000000"
 ## The audio codec's decimal identifier
-gCodecDec="000000000"
+gCodecIDDec="000000000"
+## The audio codec's revision
+gCodecRev="0x000000"
 ## The audio codec's short name (e.g. Realtek ALC898 > ALC898)
 gCodecShort="Unknown"
 ## The audio codec's model (e.g. Realtek ALC898 > 898)
@@ -30,23 +32,56 @@ gKextPath="$gSystemExtensionsDir/AppleHDA.kext"
 ## Name of the injector kext that will be created & installed
 gInjectorKextPath="AppleHDAUnknown.kext"
 
+## Styling stuff
+STYLE_RESET="\e[0m"
+STYLE_BOLD="\e[1m"
+STYLE_UNDERLINED="\e[4m"
+
+## Color stuff
+COLOR_BLACK="\e[1m"
+COLOR_RED="\e[1;31m"
+COLOR_GREEN="\e[32m"
+COLOR_DARK_YELLOW="\e[33m"
+COLOR_MAGENTA="\e[1;35m"
+COLOR_PURPLE="\e[35m"
+COLOR_CYAN="\e[36m"
+COLOR_BLUE="\e[1;34m"
+COLOR_ORANGE="\e[31m"
+COLOR_GREY="\e[37m"
+COLOR_END="\e[0m"
+
+function _printError()
+{
+	# Initialize variables
+	text="$1"
+
+	# Print the error text and exit
+	printf "${COLOR_RED}${STYLE_BOLD}ERROR: ${STYLE_RESET}${STYLE_BOLD}$text${STYLE_RESET} Exiting...\n"
+	exit 1
+}
+
 function _getAudioCodec()
 {
 	# Initialize variables
-	gCodecHex=$(ioreg -rxn IOHDACodecDevice | grep VendorID | awk '{ print $4 }' | sed 's/ffffffff//' | grep '0x10ec\|0x1106')
-	gCodecDec=$(echo $((16#$(echo $gCodecHex | sed 's/0x//'))))
+	gCodecIDHex=$(ioreg -rxn IOHDACodecDevice | grep VendorID | awk '{ print $4 }' | sed 's/ffffffff//' | grep '0x10ec')
+	gCodecIDDec=$(echo $((16#$(echo $gCodecIDHex | sed 's/0x//'))))
+	gCodecRev=$(ioreg -rxn IOHDACodecDevice | grep $gCodecIDHex -A1 | grep RevisionID | awk '{ print $4 }')
 
 	# Identify the codec
-	if [[ ! -z $gCodecHex ]]; then
-		case $gCodecDec in
-			283904146) gCodec="Realtek ALC892";;
-			283904153) gCodec="Realtek ALC898";;
-			283904256) gCodec="Realtek ALC1150";;
-			285606977) gCodec="VIA VT2021";;
-			*) echo "ERROR: Unsupported audio codec ($gCodecHex / $gCodecDec)." && exit 1;;
+	if [[ ! -z $gCodecIDHex ]]; then
+		case $gCodecIDDec in
+			283902549)
+				# Specifically identify the codec by revision, since many laptop audio codecs have many different veriants
+				if [[ ! -z $gCodecRev ]]; then
+					case $gCodecRev in
+						0x100002) gCodec="Realtek ALC3234";; # ALC255 variant found on some Broadwell Dell Inspiron laptops
+						*) _printError "Unsupported revision of Realtek ALC255 ($gCodecRev).";;
+					esac
+				fi;;
+			*) _printError "Unsupported audio codec ($gCodecIDHex / $gCodecIDDec).";;
 		esac
 	else
-		echo "ERROR: No audio codec found in IORegistry." && exit 1
+		_printError "No audio codec found in IORegistry."
 	fi
 
 	# Initialize more variables
@@ -55,22 +90,30 @@ function _getAudioCodec()
 	gInjectorKextPath="AppleHDA$gCodecModel.kext"
 
 	# Print information about the codec
-	echo "$gCodec ($gCodecHex) / ($gCodecDec) detected. Downloading codec files..."
+	# echo "$gCodec ($gCodecHex / $gCodecDec) detected. Downloading codec files..."
+
+	printf "Detected audio codec: ${STYLE_BOLD}${COLOR_CYAN}$gCodec ${STYLE_RESET}($gCodecIDHex / $gCodecIDDec / $gCodecRev)\n"
+	echo "--------------------------------------------------------------------------------"
 }
 
 function _downloadCodecFiles()
 {
 	# Initialize variables
 	fileName="$gCodecShort.zip"
+
 	# Download the ZIP containing the codec XML/plist files
-	curl --output "/tmp/$fileName" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/master/Codecs/$fileName?raw=true
+	printf "${STYLE_BOLD}Downloading $gCodec XML/plist files:${STYLE_RESET}\n"
+	curl --output "/tmp/$fileName" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/laptop/Codecs/$fileName?raw=true
 	# Download the plist containing the kext patches
-	curl --output "/tmp/ktp.plist" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/master/Patches/$gCodecShort.plist?raw=true
+	printf "${STYLE_BOLD}Downloading $gCodec kext patches:${STYLE_RESET}\n"
+	curl --output "/tmp/ktp.plist" --progress-bar --location https://github.com/theracermaster/hdaInjector.sh/blob/laptop/Patches/$gCodecShort.plist?raw=true
+	printf "${STYLE_BOLD}Creating $gCodec injector kext ($gInjectorKextPath):${STYLE_RESET}\n"
 	# Extract the codec XML/plist files
 	unzip "/tmp/$fileName" -d /tmp
+
 	# Check that the command executed successfully
 	if [ $? -ne 0 ]; then
-		echo "ERROR: Failed to download codec files." && exit 1
+		_printError "Failed to download $gCodec files."
 	fi
 }
 
@@ -127,21 +170,16 @@ function _installKext()
 	chmod -R 755 "$gInjectorKextPath"
 	chown -R 0:0 "$gInjectorKextPath"
 
-	printf "Installing $kext..."
+	printf "\n${STYLE_BOLD}Installing $gInjectorKextPath:${STYLE_RESET}"
 	# Move the kext to /Library/Extensions
 	mv "$kext" "$gExtensionsDir"
-	echo "complete."
-	# Trigger a kernel cache rebuild
-	printf "Triggering a kernel cache rebuild..."
-	touch "$gSystemExtensionsDir"
-	echo "complete."
 }
 
 function main()
 {
-	echo "hdaInjector v$gScriptVersion by theracermaster"
+	echo "OS X hdaInjector.sh script v$gScriptVersion by theracermaster"
 	echo "Heavily based off Piker-Alpha's AppleHDA8Series script"
-	echo "hdacd.plist & XML files by toleda & Mirone"
+	echo "HDA Config files & XML files by toleda, Mirone & others"
 	echo "--------------------------------------------------------------------------------"
 
 	_getAudioCodec
@@ -149,7 +187,7 @@ function main()
 
 	# If a kext already exists, ask the user if we should delete it or keep it
 	if [ -d "$gExtensionsDir/$gInjectorKextPath" ]; then
-		printf "$gInjectorKextPath already exists. Do you want to overwrite it (y/n)? "
+		printf "\n$gInjectorKextPath already exists. Do you want to overwrite it (y/n)? "
 		read choice
 		case "$choice" in
 			y|Y)
@@ -157,20 +195,20 @@ function main()
 				rm -rf "$gExtensionsDir/$gInjectorKextPath";;
 			*)
 				echo "Exiting..."
-				exit 0
+				exit 0;;
 		esac
 	fi
-
-	rm -rf "$gInjectorKextPath"
 
 	_createKext
 	_createInfoPlist
 	_installKext "$gInjectorKextPath"
 
+	printf "${STYLE_BOLD} installation complete, exiting...${STYLE_RESET}\n"
+
 	# Delete the temp files
-	rm -f /tmp/$gCodecShort.zip
-	rm -rf /tmp/$gCodecShort
-	rm -rf "$gKext"
+	sudo rm -f /tmp/$gCodecShort.zip
+	sudo rm -rf /tmp/$gCodecShort
+	sudo rm -rf "$gInjectorKextPath"
 }
 
 clear
