@@ -4,7 +4,7 @@
 <array>
 	<dict>
 		<key>Comment</key>
-		<string>10.10-Realtek ALC887 AppleHDA Patch (1 of 2)</string>
+		<string>[10.7+] Change ADI 1984B to Realtek ALC892</string>
 		<key>Find</key>
 		<data>ixnUEQ==</data>
 		<key>Name</key>
@@ -14,7 +14,7 @@
 	</dict>
 	<dict>
 		<key>Comment</key>
-		<string>10.11-Realtek ALC892 AppleHDA Patch (2 of 2)</string>
+		<string>[10.11] Disable ADI 1983</string>
 		<key>Find</key>
 		<data>gxnUEQ==</data>
 		<key>Name</key>
