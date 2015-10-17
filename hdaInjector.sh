@@ -61,7 +61,7 @@ function _printError()
 function _getAudioCodec()
 {
 	# Initialize variables
-	gCodecIDHex=$(ioreg -rxn IOHDACodecDevice | grep VendorID | awk '{ print $4 }' | sed 's/ffffffff//' | grep '0x10ec')
+	gCodecIDHex=$(ioreg -rxn IOHDACodecDevice | grep VendorID | awk '{ print $4 }' | sed 's/ffffffff//' | grep '0x10ec\|0x1106')
 	gCodecIDDec=$(echo $((16#$(echo $gCodecIDHex | sed 's/0x//'))))
 
 	# Identify the codec
